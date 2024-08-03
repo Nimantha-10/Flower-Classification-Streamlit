@@ -13,11 +13,10 @@ MODEL_URL = "https://www.dropbox.com/scl/fi/t527snher97bzrw4g1tas/flower_model.h
 def load_model():
     response = requests.get(MODEL_URL)
     if response.status_code == 200:
-        # Save the model to a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".h5") as temp_file:
             temp_file.write(response.content)
-            temp_file.flush()  # Ensure all data is written to the file
-            temp_file.seek(0)  # Rewind the file pointer to the beginning
+            temp_file.flush()
+            temp_file.seek(0)
             model = tf.keras.models.load_model(temp_file.name)
             return model
     else:
@@ -27,25 +26,25 @@ def load_model():
 model = load_model()
 
 if model is None:
-    st.stop()  # Stop the app if the model is not loaded
+    st.stop()
 
 categories = ['daisy', 'dandelion', 'rose', 'sunflower', 'tulip']
 
 def predict_flower(image, model, categories):
     try:
         image = Image.open(image)
-        image = image.resize((150, 150))  # Resize to match model input
-        image = np.array(image) / 255.0  # Normalize image
+        image = image.resize((150, 150))  # Ensure this matches the model input size
+        image = np.array(image) / 255.0  # Normalize
         image = np.expand_dims(image, axis=0)  # Add batch dimension
         
         # Debugging information
         st.write(f"Image shape: {image.shape}")
-        st.write(f"Image dtype: {image.dtype}")
-        
+        st.write(f"Expected input shape: {model.input_shape}")
+
         predictions = model.predict(image)
         pred_class = np.argmax(predictions)
         confidence = np.max(predictions)
-        
+
         if confidence < 0.5:
             return "Not in system"
         return categories[pred_class]
