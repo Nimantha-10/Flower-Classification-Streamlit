@@ -32,16 +32,26 @@ if model is None:
 categories = ['daisy', 'dandelion', 'rose', 'sunflower', 'tulip']
 
 def predict_flower(image, model, categories):
-    image = Image.open(image)
-    image = image.resize((150, 150))
-    image = np.array(image) / 255.0
-    image = np.expand_dims(image, axis=0)
-    predictions = model.predict(image)
-    pred_class = np.argmax(predictions)
-    confidence = np.max(predictions)
-    if confidence < 0.5:
-        return "Not in system"
-    return categories[pred_class]
+    try:
+        image = Image.open(image)
+        image = image.resize((150, 150))  # Resize to match model input
+        image = np.array(image) / 255.0  # Normalize image
+        image = np.expand_dims(image, axis=0)  # Add batch dimension
+        
+        # Debugging information
+        st.write(f"Image shape: {image.shape}")
+        st.write(f"Image dtype: {image.dtype}")
+        
+        predictions = model.predict(image)
+        pred_class = np.argmax(predictions)
+        confidence = np.max(predictions)
+        
+        if confidence < 0.5:
+            return "Not in system"
+        return categories[pred_class]
+    except Exception as e:
+        st.error(f"Prediction error: {e}")
+        return "Error during prediction"
 
 st.title("Flower Classification")
 st.header("Upload a picture of a flower to identify it.")
