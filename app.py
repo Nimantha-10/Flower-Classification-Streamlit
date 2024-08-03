@@ -31,23 +31,35 @@ if model is None:
 categories = ['daisy', 'dandelion', 'rose', 'sunflower', 'tulip']
 
 def predict_flower(image, model, categories):
-    try:
-        image = Image.open(image)
-        image = image.resize((150, 150))  # Ensure this matches the model input size
-        image = np.array(image) / 255.0  # Normalize
-        image = np.expand_dims(image, axis=0)  # Add batch dimension
-        
-        # Debugging information
-        st.write(f"Image shape: {image.shape}")
-        st.write(f"Expected input shape: {model.input_shape}")
+    # Open the image file
+    image = Image.open(image)
+    
+    # Resize image to the expected input shape (128, 128)
+    image = image.resize((128, 128))  # Change this if your model expects a different size
+    
+    # Convert image to numpy array and normalize
+    image = np.array(image) / 255.0
+    
+    # Check if the image has 3 channels, if not, convert to RGB
+    if len(image.shape) != 3 or image.shape[2] != 3:
+        image = np.stack([image] * 3, axis=-1)  # Convert grayscale to RGB if necessary
+    
+    # Add batch dimension
+    image = np.expand_dims(image, axis=0)
+    
+    # Perform prediction
+    predictions = model.predict(image)
+    
+    # Get the predicted class
+    pred_class = np.argmax(predictions)
+    confidence = np.max(predictions)
+    
+    # Handle low confidence cases
+    if confidence < 0.5:
+        return "Not in system"
+    
+    return categories[pred_class]
 
-        predictions = model.predict(image)
-        pred_class = np.argmax(predictions)
-        confidence = np.max(predictions)
-
-        if confidence < 0.5:
-            return "Not in system"
-        return categories[pred_class]
     except Exception as e:
         st.error(f"Prediction error: {e}")
         return "Error during prediction"
