@@ -8,6 +8,7 @@ import os
 # URL to the model file stored on Google Drive
 MODEL_URL = "https://drive.google.com/uc?export=download&id=18IlaJv3-K45Bhi3Dk-8Mx1mtUcTJvGwg"
 
+
 @st.cache(allow_output_mutation=True)
 def load_model():
     try:
