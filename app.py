@@ -2,39 +2,34 @@ import streamlit as st
 import tensorflow as tf
 from PIL import Image
 import numpy as np
-import requests
-from io import BytesIO
-import tempfile
-import h5py
+import io
 
-# URL to the model file stored on Google Drive
-MODEL_URL = "https://drive.google.com/uc?export=download&id=1--BsZo7orLcfLT7YP82w-j0qX8Y7GtS5"
-
+# Function to load model from BytesIO
 def load_model_from_bytes(byte_stream):
     try:
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            temp_file.write(byte_stream.read())
-            temp_file.flush()
-            return tf.keras.models.load_model(temp_file.name)
+        # Load model directly from BytesIO stream
+        return tf.keras.models.load_model(io.BytesIO(byte_stream))
     except Exception as e:
         st.error(f"Error loading model from bytes: {e}")
         return None
 
-@st.cache(allow_output_mutation=True)
-def load_model():
-    try:
-        response = requests.get(MODEL_URL)
-        response.raise_for_status()  # Check for HTTP request errors
-        byte_stream = BytesIO(response.content)
-        model = load_model_from_bytes(byte_stream)
-        if model:
-            st.success("Model loaded successfully!")
-        return model
-    except Exception as e:
-        st.error(f"Error loading model: {e}")
-        return None
+st.title("Flower Classification")
+st.header("Upload your flower model and a picture of a flower to identify it.")
 
-model = load_model()
+# Upload model file
+model_file = st.file_uploader("Upload a Keras model file...", type=["h5"])
+
+if model_file is not None:
+    # Read the file as bytes and load the model
+    model_bytes = model_file.read()
+    model = load_model_from_bytes(model_bytes)
+    if model:
+        st.success("Model loaded successfully!")
+    else:
+        st.error("Failed to load the model. Please check the file and try again.")
+else:
+    model = None
+    st.info("Please upload a Keras model file to proceed.")
 
 categories = ['daisy', 'dandelion', 'rose', 'sunflower', 'tulip']
 
@@ -56,9 +51,7 @@ def predict_flower(image, model, categories):
     except Exception as e:
         return f"Error in prediction: {e}"
 
-st.title("Flower Classification")
-st.header("Upload a picture of a flower to identify it.")
-
+# Upload image file
 uploaded_file = st.file_uploader("Choose an image...", type="jpg")
 
 if uploaded_file is not None:
