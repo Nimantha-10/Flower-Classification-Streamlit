@@ -8,11 +8,21 @@ from io import BytesIO
 # URL to the model file stored on Google Drive
 MODEL_URL = "https://drive.google.com/uc?export=download&id=18IlaJv3-K45Bhi3Dk-8Mx1mtUcTJvGwg"
 
-@st.cache(allow_output_mutation=True)
+@st.cache_data
 def load_model():
     # Fetch the model file from Google Drive
     response = requests.get(MODEL_URL)
-    model = tf.keras.models.load_model(BytesIO(response.content))
+    
+    # Debug: Check response content type and status code
+    st.write(f"Response status code: {response.status_code}")
+    st.write(f"Response content type: {response.headers['Content-Type']}")
+    
+    # Save the model file locally
+    with open("flower_model.h5", "wb") as f:
+        f.write(response.content)
+    
+    # Load the model from the saved file
+    model = tf.keras.models.load_model("flower_model.h5")
     return model
 
 model = load_model()
