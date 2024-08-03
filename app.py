@@ -1,1 +1,86 @@
-{"nbformat":4,"nbformat_minor":0,"metadata":{"colab":{"provenance":[],"authorship_tag":"ABX9TyPEuuCjtTlRclWSPgHGJhFl"},"kernelspec":{"name":"python3","display_name":"Python 3"},"language_info":{"name":"python"}},"cells":[{"cell_type":"code","execution_count":1,"metadata":{"colab":{"base_uri":"https://localhost:8080/","height":384},"id":"fjdsxVhnezR6","executionInfo":{"status":"error","timestamp":1722692819782,"user_tz":-330,"elapsed":1210,"user":{"displayName":"Thanuka Nimantha","userId":"00984933976325634142"}},"outputId":"44c10eb0-60d9-4513-a5ae-8c93893b273b"},"outputs":[{"output_type":"error","ename":"ModuleNotFoundError","evalue":"No module named 'streamlit'","traceback":["\u001b[0;31m---------------------------------------------------------------------------\u001b[0m","\u001b[0;31mModuleNotFoundError\u001b[0m                       Traceback (most recent call last)","\u001b[0;32m<ipython-input-1-d6018067f609>\u001b[0m in \u001b[0;36m<cell line: 1>\u001b[0;34m()\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m \u001b[0;32mimport\u001b[0m \u001b[0mstreamlit\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0mst\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m      2\u001b[0m \u001b[0;32mimport\u001b[0m \u001b[0mtensorflow\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0mtf\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      3\u001b[0m \u001b[0;32mfrom\u001b[0m \u001b[0mPIL\u001b[0m \u001b[0;32mimport\u001b[0m \u001b[0mImage\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      4\u001b[0m \u001b[0;32mimport\u001b[0m \u001b[0mnumpy\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0mnp\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m      5\u001b[0m \u001b[0;32mimport\u001b[0m \u001b[0mrequests\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n","\u001b[0;31mModuleNotFoundError\u001b[0m: No module named 'streamlit'","","\u001b[0;31m---------------------------------------------------------------------------\u001b[0;32m\nNOTE: If your import is failing due to a missing package, you can\nmanually install dependencies using either !pip or !apt.\n\nTo view examples of installing some common dependencies, click the\n\"Open Examples\" button below.\n\u001b[0;31m---------------------------------------------------------------------------\u001b[0m\n"],"errorDetails":{"actions":[{"action":"open_url","actionText":"Open Examples","url":"/notebooks/snippets/importing_libraries.ipynb"}]}}],"source":["import streamlit as st\n","import tensorflow as tf\n","from PIL import Image\n","import numpy as np\n","import requests\n","from io import BytesIO\n","\n","# URL to the model file stored on Google Drive or another cloud storage\n","MODEL_URL = \"https://drive.google.com/uc?export=download&id=1--BsZo7orLcfLT7YP82w-j0qX8Y7GtS5\"\n","\n","@st.cache(allow_output_mutation=True)\n","def load_model():\n","    response = requests.get(MODEL_URL)\n","    model = tf.keras.models.load_model(BytesIO(response.content))\n","    return model\n","\n","model = load_model()\n","\n","categories = ['daisy', 'dandelion', 'rose', 'sunflower', 'tulip']\n","\n","def predict_flower(image, model, categories):\n","    image = Image.open(image)\n","    image = image.resize((150, 150))\n","    image = np.array(image) / 255.0\n","    image = np.expand_dims(image, axis=0)\n","    predictions = model.predict(image)\n","    pred_class = np.argmax(predictions)\n","    confidence = np.max(predictions)\n","    if confidence < 0.5:\n","        return \"Not in system\"\n","    return categories[pred_class]\n","\n","st.title(\"Flower Classification\")\n","st.header(\"Upload a picture of a flower to identify it.\")\n","\n","uploaded_file = st.file_uploader(\"Choose an image...\", type=\"jpg\")\n","\n","if uploaded_file is not None:\n","    st.image(uploaded_file, caption='Uploaded Image', use_column_width=True)\n","    if st.button(\"Predict\"):\n","        flower_name = predict_flower(uploaded_file, model, categories)\n","        st.write(f\"The predicted flower is: {flower_name}\")\n"]},{"cell_type":"code","source":["https://drive.google.com/file/d/1--BsZo7orLcfLT7YP82w-j0qX8Y7GtS5/view?usp=drive_link"],"metadata":{"id":"0jav_AV7fLOe"},"execution_count":null,"outputs":[]}]}
+import streamlit as st
+import numpy as np
+import tensorflow as tf
+import requests
+from PIL import Image
+from io import BytesIO
+
+# Function to download file from Google Drive
+def download_file_from_google_drive(file_id, destination):
+    URL = "https://drive.google.com/uc?export=download"
+    session = requests.Session()
+    response = session.get(f"{URL}&id={file_id}", stream=True)
+    
+    # Get the confirmation token if present
+    confirm_token = get_confirm_token(response)
+    if confirm_token:
+        response = session.get(f"{URL}&confirm={confirm_token}&id={file_id}", stream=True)
+    
+    # Save the file
+    save_response_content(response, destination)
+
+def get_confirm_token(response):
+    for key, value in response.cookies.items():
+        if key.startswith('confirm'):
+            return value
+    return None
+
+def save_response_content(response, destination):
+    CHUNK_SIZE = 32768
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(CHUNK_SIZE):
+            if chunk:
+                f.write(chunk)
+
+# Download the model from Google Drive
+file_id = '1--BsZo7orLcfLT7YP82w-j0qX8Y7GtS5'
+output = 'flower_model.h5'
+download_file_from_google_drive(file_id, output)
+
+# Check if file exists and is not empty
+import os
+if not os.path.exists(output) or os.path.getsize(output) == 0:
+    st.error("Model file not downloaded correctly or is empty.")
+    st.stop()
+
+# Load the model
+try:
+    model = tf.keras.models.load_model(output)
+except Exception as e:
+    st.error(f"Error loading model: {e}")
+    st.stop()
+
+# Define flower classes (replace with your actual class names)
+class_names = ['rose', 'tulip', 'sunflower', 'daisy', 'dandelion']
+
+# Define a function to preprocess the image
+def preprocess_image(image):
+    img = image.resize((224, 224))  # Resize to the input size your model expects
+    img = np.array(img) / 255.0     # Normalize pixel values
+    img = np.expand_dims(img, axis=0)  # Add batch dimension
+    return img
+
+# Define a function to predict the flower type and similar images
+def predict_flower(image):
+    preprocessed_image = preprocess_image(image)
+    predictions = model.predict(preprocessed_image)
+    predicted_class = class_names[np.argmax(predictions)]
+    # For similar images, you need to implement your logic here
+    similar_images = [f"URL of similar image {i+1}" for i in range(5)]
+    return predicted_class, similar_images
+
+# Streamlit app layout
+st.title("Flower Recognition App")
+st.write("Upload an image of a flower to get the prediction and similar images.")
+
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption='Uploaded Image.', use_column_width=True)
+    st.write("Classifying...")
+    predicted_class, similar_images = predict_flower(image)
+    st.write(f"Predicted Flower: {predicted_class}")
+    st.write("Similar Images:")
+    for img_url in similar_images:
+        st.image(img_url, width=150)  # Replace with the actual way you get images
