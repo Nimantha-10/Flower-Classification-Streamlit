@@ -5,26 +5,30 @@ import numpy as np
 import requests
 from io import BytesIO
 import tempfile
+import h5py
 
 # URL to the model file stored on Google Drive
 MODEL_URL = "https://drive.google.com/uc?export=download&id=1--BsZo7orLcfLT7YP82w-j0qX8Y7GtS5"
 
+def load_model_from_bytes(byte_stream):
+    try:
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(byte_stream.read())
+            temp_file.flush()
+            return tf.keras.models.load_model(temp_file.name)
+    except Exception as e:
+        st.error(f"Error loading model from bytes: {e}")
+        return None
+
 @st.cache(allow_output_mutation=True)
 def load_model():
     try:
-        # Download the model file
         response = requests.get(MODEL_URL)
         response.raise_for_status()  # Check for HTTP request errors
-
-        # Save the model file to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            temp_file.write(response.content)
-            temp_file.flush()  # Ensure content is written to disk
-
-            # Load the model from the temporary file
-            model = tf.keras.models.load_model(temp_file.name)
-        
-        st.success("Model loaded successfully!")
+        byte_stream = BytesIO(response.content)
+        model = load_model_from_bytes(byte_stream)
+        if model:
+            st.success("Model loaded successfully!")
         return model
     except Exception as e:
         st.error(f"Error loading model: {e}")
