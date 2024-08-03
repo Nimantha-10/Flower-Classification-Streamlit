@@ -3,28 +3,27 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 import requests
-from io import BytesIO
 import os
 
-# URL to the new model file stored on Google Drive
+# URL to the model file stored on Google Drive
 MODEL_URL = "https://drive.google.com/uc?export=download&id=18IlaJv3-K45Bhi3Dk-8Mx1mtUcTJvGwg"
 
 @st.cache(allow_output_mutation=True)
 def load_model():
     try:
-        response = requests.get(MODEL_URL)
-        response.raise_for_status()  # Ensure we catch HTTP errors
-        
-        # Write the model content to a temporary file
-        temp_model_path = "temp_model.h5"
-        with open(temp_model_path, "wb") as f:
-            f.write(response.content)
-        
-        model = tf.keras.models.load_model(temp_model_path)
-        
-        # Remove the temporary file after loading the model
-        os.remove(temp_model_path)
-        
+        # Define the file name and cache directory
+        file_name = "flower_model.h5"
+        cache_dir = os.path.expanduser("~/.streamlit/")
+
+        # Use tf.keras.utils.get_file to download and cache the model
+        model_path = tf.keras.utils.get_file(
+            fname=file_name,
+            origin=MODEL_URL,
+            cache_dir=cache_dir,
+            cache_subdir='.'
+        )
+
+        model = tf.keras.models.load_model(model_path)
         return model
     except Exception as e:
         st.error(f"Error loading model: {e}")
