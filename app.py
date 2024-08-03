@@ -3,7 +3,6 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 import requests
-from io import BytesIO
 
 # URL to the model file stored on Google Drive
 MODEL_URL = "https://drive.google.com/uc?export=download&id=18IlaJv3-K45Bhi3Dk-8Mx1mtUcTJvGwg"
@@ -14,11 +13,14 @@ def load_model():
         # Download the model file from the URL
         response = requests.get(MODEL_URL)
         response.raise_for_status()  # Raise an error on bad status
-        with open("model.h5", "wb") as f:
+
+        # Save the model to a temporary file
+        temp_model_path = "model_temp.h5"
+        with open(temp_model_path, "wb") as f:
             f.write(response.content)
-        
+
         # Load the model from the saved file
-        model = tf.keras.models.load_model("model.h5")
+        model = tf.keras.models.load_model(temp_model_path)
         return model
     except Exception as e:
         st.error(f"Error loading model: {e}")
