@@ -4,6 +4,7 @@ from PIL import Image
 import numpy as np
 import requests
 from io import BytesIO
+import os
 
 # URL to the new model file stored on Google Drive
 MODEL_URL = "https://drive.google.com/uc?export=download&id=18IlaJv3-K45Bhi3Dk-8Mx1mtUcTJvGwg"
@@ -13,7 +14,17 @@ def load_model():
     try:
         response = requests.get(MODEL_URL)
         response.raise_for_status()  # Ensure we catch HTTP errors
-        model = tf.keras.models.load_model(BytesIO(response.content))
+        
+        # Write the model content to a temporary file
+        temp_model_path = "temp_model.h5"
+        with open(temp_model_path, "wb") as f:
+            f.write(response.content)
+        
+        model = tf.keras.models.load_model(temp_model_path)
+        
+        # Remove the temporary file after loading the model
+        os.remove(temp_model_path)
+        
         return model
     except Exception as e:
         st.error(f"Error loading model: {e}")
