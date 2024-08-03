@@ -4,6 +4,7 @@ from PIL import Image
 import numpy as np
 import requests
 from io import BytesIO
+import tempfile
 
 # URL to the model file stored on Dropbox
 MODEL_URL = "https://www.dropbox.com/scl/fi/t527snher97bzrw4g1tas/flower_model.h5?rlkey=d3ltlw10hnso9qlfnefrnckdd&st=m11eaw66&dl=1"
@@ -11,10 +12,22 @@ MODEL_URL = "https://www.dropbox.com/scl/fi/t527snher97bzrw4g1tas/flower_model.h
 @st.cache(allow_output_mutation=True)
 def load_model():
     response = requests.get(MODEL_URL)
-    model = tf.keras.models.load_model(BytesIO(response.content))
-    return model
+    if response.status_code == 200:
+        # Save the model to a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".h5") as temp_file:
+            temp_file.write(response.content)
+            temp_file.flush()  # Ensure all data is written to the file
+            temp_file.seek(0)  # Rewind the file pointer to the beginning
+            model = tf.keras.models.load_model(temp_file.name)
+            return model
+    else:
+        st.error("Error loading model from Dropbox.")
+        return None
 
 model = load_model()
+
+if model is None:
+    st.stop()  # Stop the app if the model is not loaded
 
 categories = ['daisy', 'dandelion', 'rose', 'sunflower', 'tulip']
 
