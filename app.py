@@ -3,37 +3,22 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 import requests
+from io import BytesIO
 
-# URL to the model file stored on Google Drive
-MODEL_URL = "https://drive.google.com/uc?export=download&id=18IlaJv3-K45Bhi3Dk-8Mx1mtUcTJvGwg"
+# URL to the model file stored on Dropbox
+MODEL_URL = "https://www.dropbox.com/scl/fi/t527snher97bzrw4g1tas/flower_model.h5?rlkey=d3ltlw10hnso9qlfnefrnckdd&st=m11eaw66&dl=1"
 
-@st.cache_resource
+@st.cache(allow_output_mutation=True)
 def load_model():
-    try:
-        # Download the model file from the URL
-        response = requests.get(MODEL_URL)
-        response.raise_for_status()  # Raise an error on bad status
-
-        # Save the model to a temporary file
-        temp_model_path = "model_temp.h5"
-        with open(temp_model_path, "wb") as f:
-            f.write(response.content)
-
-        # Load the model from the saved file
-        model = tf.keras.models.load_model(temp_model_path)
-        return model
-    except Exception as e:
-        st.error(f"Error loading model: {e}")
-        return None
+    response = requests.get(MODEL_URL)
+    model = tf.keras.models.load_model(BytesIO(response.content))
+    return model
 
 model = load_model()
 
 categories = ['daisy', 'dandelion', 'rose', 'sunflower', 'tulip']
 
 def predict_flower(image, model, categories):
-    if model is None:
-        return "Model is not loaded"
-    
     image = Image.open(image)
     image = image.resize((150, 150))
     image = np.array(image) / 255.0
