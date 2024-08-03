@@ -3,28 +3,22 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 import requests
-import os
+from io import BytesIO
 
 # URL to the model file stored on Google Drive
 MODEL_URL = "https://drive.google.com/uc?export=download&id=18IlaJv3-K45Bhi3Dk-8Mx1mtUcTJvGwg"
 
-
-@st.cache(allow_output_mutation=True)
+@st.cache_resource
 def load_model():
     try:
-        # Define the file name and cache directory
-        file_name = "flower_model.h5"
-        cache_dir = os.path.expanduser("~/.streamlit/")
-
-        # Use tf.keras.utils.get_file to download and cache the model
-        model_path = tf.keras.utils.get_file(
-            fname=file_name,
-            origin=MODEL_URL,
-            cache_dir=cache_dir,
-            cache_subdir='.'
-        )
-
-        model = tf.keras.models.load_model(model_path)
+        # Download the model file from the URL
+        response = requests.get(MODEL_URL)
+        response.raise_for_status()  # Raise an error on bad status
+        with open("model.h5", "wb") as f:
+            f.write(response.content)
+        
+        # Load the model from the saved file
+        model = tf.keras.models.load_model("model.h5")
         return model
     except Exception as e:
         st.error(f"Error loading model: {e}")
@@ -32,25 +26,22 @@ def load_model():
 
 model = load_model()
 
-categories = ['daisy', 'dandelion', 'rose', 'sunflower', 'tulip']  # Update with your actual class names
+categories = ['daisy', 'dandelion', 'rose', 'sunflower', 'tulip']
 
 def predict_flower(image, model, categories):
     if model is None:
         return "Model is not loaded"
-    try:
-        image = Image.open(image)
-        image = image.resize((150, 150))
-        image = np.array(image) / 255.0
-        image = np.expand_dims(image, axis=0)
-        predictions = model.predict(image)
-        pred_class = np.argmax(predictions)
-        confidence = np.max(predictions)
-        if confidence < 0.5:
-            return "Not in system"
-        return categories[pred_class]
-    except Exception as e:
-        st.error(f"Error during prediction: {e}")
-        return "Prediction error"
+    
+    image = Image.open(image)
+    image = image.resize((150, 150))
+    image = np.array(image) / 255.0
+    image = np.expand_dims(image, axis=0)
+    predictions = model.predict(image)
+    pred_class = np.argmax(predictions)
+    confidence = np.max(predictions)
+    if confidence < 0.5:
+        return "Not in system"
+    return categories[pred_class]
 
 st.title("Flower Classification")
 st.header("Upload a picture of a flower to identify it.")
